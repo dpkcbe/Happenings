@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert, Platform } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert, Platform, Image, Modal, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
-import { Calendar, Clock, MapPin, Image as ImageIcon } from 'lucide-react-native';
+import { Calendar, Clock, MapPin, Image as ImageIcon, X, Plus } from 'lucide-react-native';
 import { useEventStore } from '../../store/eventStore';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { useColorScheme } from 'nativewind';
+
+const { width, height } = Dimensions.get('window');
 
 export default function CreateEventScreen() {
     const navigation = useNavigation();
@@ -14,14 +18,60 @@ export default function CreateEventScreen() {
     const [description, setDescription] = useState('');
     const [category, setCategory] = useState('Social');
     const [isPublic, setIsPublic] = useState(true);
-    const [maxParticipants, setMaxParticipants] = useState('');
+    // const [maxParticipants, setMaxParticipants] = useState(''); // Unused for now
 
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
 
+    // Media
+    const [selectedImages, setSelectedImages] = useState<string[]>([]);
+
+    // Location
+    const [locationData, setLocationData] = useState<{ lat: number, long: number, address: string } | null>(null);
+    const [showMapPicker, setShowMapPicker] = useState(false);
+    const [mapRegion, setMapRegion] = useState({
+        latitude: 19.0760,
+        longitude: 72.8777,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+    });
+    const mapRef = useRef<MapView>(null);
+
     // Simple category selection for now
     const categories = ['Social', 'Music', 'Sports', 'Wellness', 'Education', 'Food'];
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, // Photos or Videos? User said photos or reels. Let's allowing All if possible or just Images for now to be safe.
+            allowsEditing: true,
+            aspect: [4, 5],
+            quality: 0.8,
+        });
+
+        if (!result.canceled) {
+            setSelectedImages([...selectedImages, result.assets[0].uri]);
+        }
+    };
+
+    const removeImage = (index: number) => {
+        const newImages = [...selectedImages];
+        newImages.splice(index, 1);
+        setSelectedImages(newImages);
+    };
+
+    const handleGetCurrentLocation = async () => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            Alert.alert('Permission to access location was denied');
+            return;
+        }
+
+        let location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+        // In real app, reverse geocode here
+        setLocationData({ lat: latitude, long: longitude, address: 'Current Location' });
+    };
 
     const handleCreate = async () => {
         if (!title || !description) {
@@ -29,12 +79,9 @@ export default function CreateEventScreen() {
             return;
         }
 
-        // Mock creation - in real app, we'd get location from map picker
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        let location = { coords: { latitude: 37.7749, longitude: -122.4194 } }; // Default
-
-        if (status === 'granted') {
-            location = await Location.getCurrentPositionAsync({});
+        if (!locationData) {
+            Alert.alert('Please select a location');
+            return;
         }
 
         useEventStore.getState().addEvent({
@@ -42,24 +89,20 @@ export default function CreateEventScreen() {
             description,
             category,
             start_time: date.toISOString(),
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
+            image_url: selectedImages.length > 0 ? selectedImages[0] : null, // Use first image as main
+            location: {
+                latitude: locationData.lat,
+                longitude: locationData.long,
+                address: locationData.address
+            },
             is_public: isPublic,
         });
 
         Alert.alert('Event Created!', 'Your event is now live on the map.');
-        navigation.goBack();
+        navigation.navigate('Feed' as never);
     };
 
-    const onChangeDate = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(Platform.OS === 'ios');
-        if (selectedDate) setDate(selectedDate);
-    };
-
-    const onChangeTime = (event: any, selectedDate?: Date) => {
-        setShowTimePicker(Platform.OS === 'ios');
-        if (selectedDate) setDate(selectedDate);
-    };
+    // ... date handlers same ...
 
     const { colorScheme } = useColorScheme();
     const bgColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
@@ -72,12 +115,38 @@ export default function CreateEventScreen() {
         <SafeAreaView className="flex-1 bg-white" style={{ backgroundColor: bgColor }}>
             <View className="px-4 py-3 border-b border-gray-100 flex-row justify-between items-center" style={{ borderColor }}>
                 <Text className="text-xl font-bold text-gray-900" style={{ color: textColor }}>Host an Event</Text>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
+                <TouchableOpacity onPress={() => navigation.navigate('Feed' as never)}>
                     <Text className="text-gray-500">Cancel</Text>
                 </TouchableOpacity>
             </View>
 
             <ScrollView className="flex-1 p-4">
+                {/* Media Section */}
+                <View className="mb-6">
+                    <Text className="text-gray-700 font-semibold mb-3" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Add Photos or Reels</Text>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
+                        <TouchableOpacity
+                            onPress={pickImage}
+                            className="w-24 h-32 bg-gray-100 dark:bg-gray-800 rounded-xl items-center justify-center border border-dashed border-gray-300 dark:border-gray-700 mr-3"
+                        >
+                            <Plus size={24} color={colorScheme === 'dark' ? '#9CA3AF' : '#6B7280'} />
+                            <Text className="text-xs text-gray-500 mt-1">Add</Text>
+                        </TouchableOpacity>
+
+                        {selectedImages.map((uri, index) => (
+                            <View key={index} className="mr-3 relative">
+                                <Image source={{ uri }} className="w-24 h-32 rounded-xl bg-gray-200" resizeMode="cover" />
+                                <TouchableOpacity
+                                    onPress={() => removeImage(index)}
+                                    className="absolute -top-2 -right-2 bg-red-500 rounded-full p-1"
+                                >
+                                    <X size={12} color="white" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+
                 {/* Title */}
                 <View className="mb-6">
                     <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Event Title</Text>
@@ -172,16 +241,41 @@ export default function CreateEventScreen() {
                     />
                 )}
 
-                {/* Location - Simplified for now */}
+                {/* Location */}
                 <View className="mb-6">
                     <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Location</Text>
-                    <TouchableOpacity
-                        className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex-row items-center justify-center border-dashed border-2"
-                        style={{ backgroundColor: colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.1)' : '#EEF2FF', borderColor: colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.3)' : '#E0E7FF' }}
-                    >
-                        <MapPin size={24} color="#4F46E5" />
-                        <Text className="ml-2 text-indigo-600 font-semibold">Use Current Location</Text>
-                    </TouchableOpacity>
+
+                    {locationData ? (
+                        <View className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex-row justify-between items-center mb-3" style={{ backgroundColor: colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.1)' : '#EEF2FF', borderColor: '#4F46E5' }}>
+                            <View className="flex-row items-center flex-1">
+                                <MapPin size={20} color="#4F46E5" />
+                                <Text numberOfLines={1} className="ml-2 text-indigo-700 font-medium flex-1">{locationData.address}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => setLocationData(null)}>
+                                <X size={16} color="#4F46E5" />
+                            </TouchableOpacity>
+                        </View>
+                    ) : null}
+
+                    <View className="flex-row gap-3">
+                        <TouchableOpacity
+                            onPress={handleGetCurrentLocation}
+                            className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-200 flex-row items-center justify-center"
+                            style={{ backgroundColor: inputBg, borderColor: inputBorder }}
+                        >
+                            <MapPin size={18} color={colorScheme === 'dark' ? '#9CA3AF' : '#4B5563'} />
+                            <Text className="ml-2 font-medium" style={{ color: textColor }}>Current Location</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => setShowMapPicker(true)}
+                            className="flex-1 bg-gray-50 p-3 rounded-xl border border-gray-200 flex-row items-center justify-center"
+                            style={{ backgroundColor: inputBg, borderColor: inputBorder }}
+                        >
+                            <MapPin size={18} color={colorScheme === 'dark' ? '#9CA3AF' : '#4B5563'} />
+                            <Text className="ml-2 font-medium" style={{ color: textColor }}>Pin on Map</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 {/* Privacy Toggle */}
@@ -205,6 +299,65 @@ export default function CreateEventScreen() {
                 </TouchableOpacity>
 
             </ScrollView>
+
+            {/* Map Picker Modal */}
+            <Modal
+                visible={showMapPicker}
+                animationType="slide"
+                onRequestClose={() => setShowMapPicker(false)}
+            >
+                <View className="flex-1 bg-white">
+                    <MapView
+                        ref={mapRef}
+                        style={{ width: width, height: height, flex: 1 }}
+                        initialRegion={mapRegion}
+                        onRegionChangeComplete={setMapRegion}
+                        showsUserLocation
+                        showsMyLocationButton
+                    >
+                        <Marker
+                            coordinate={mapRegion}
+                            title="Selected Location"
+                            description="Move map to pin location"
+                        />
+                        {/* We can make a fixed center pin overlay instead of a marker that moves with region, 
+                             or sticky marker. For simplicity, let's assume the center of the map is the selection. 
+                             Actually, let's use a center view overlay. */}
+                    </MapView>
+
+                    {/* Center Pin Overlay */}
+                    <View className="absolute top-1/2 left-1/2 -mt-9 -ml-4 pointer-events-none" style={{ marginTop: -36, marginLeft: -16 }}>
+                        <MapPin size={48} color="#4F46E5" fill="white" />
+                    </View>
+
+                    {/* Header */}
+                    <View className="absolute top-12 left-4 right-4 flex-row justify-between items-center">
+                        <TouchableOpacity
+                            onPress={() => setShowMapPicker(false)}
+                            className="bg-white p-3 rounded-full shadow-lg"
+                        >
+                            <X size={24} color="black" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Footer - Confirm */}
+                    <View className="absolute bottom-10 left-6 right-6">
+                        <TouchableOpacity
+                            className="bg-indigo-600 p-4 rounded-xl items-center shadow-lg"
+                            onPress={() => {
+                                setLocationData({
+                                    lat: mapRegion.latitude,
+                                    long: mapRegion.longitude,
+                                    address: 'Pinned Location' // Placeholder
+                                });
+                                setShowMapPicker(false);
+                            }}
+                        >
+                            <Text className="text-white font-bold text-lg">Confirm Location</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }

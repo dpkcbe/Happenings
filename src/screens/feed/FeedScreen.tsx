@@ -48,7 +48,7 @@ export default function FeedScreen() {
         <SafeAreaView
             className="flex-1 bg-gray-50 dark:bg-black"
             edges={['top']}
-            style={{ backgroundColor: colorScheme === 'dark' ? '#000000' : '#F9FAFB' }}
+            style={{ backgroundColor: colorScheme === 'dark' ? '#000000' : '#f4f4f5' }} // zinc-100 for light mode
         >
             <View
                 className="flex-row justify-between items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"

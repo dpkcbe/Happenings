@@ -9,10 +9,14 @@ export interface Event {
     host_name: string;
     image_url: string | null;
     category: string;
-    latitude: number;
-    longitude: number;
+    location?: {
+        latitude: number;
+        longitude: number;
+        address?: string;
+    };
     start_time: string;
     end_time: string;
+    created_at: string;
     is_public: boolean;
     max_participants: number | null;
     attendees_count: number;
@@ -133,6 +137,27 @@ const MOCK_EVENTS: Event[] = [
         attendees_count: 22,
         distance: 12.5
     },
+    {
+        id: '6',
+        title: 'Yoga Life Competition',
+        description: 'Join the ultimate Yoga Life Competition! Show off your flexibility and strength.',
+        host_id: 'host6',
+        host_name: 'Yoga Life',
+        image_url: 'https://images.unsplash.com/photo-1599901860904-17e6ed7083a0?w=800&q=80',
+        category: 'Health',
+        location: {
+            latitude: 12.8452,
+            longitude: 77.6602,
+            address: 'M5 Ecity Mall'
+        },
+        start_time: new Date(Date.now() + 1000 * 60 * 60 * 24 * 10).toISOString(),
+        end_time: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
+        created_at: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+        is_public: true,
+        max_participants: 100,
+        attendees_count: 89,
+        distance: 0.5
+    }
 ];
 
 export const useEventStore = create<EventState>((set) => ({
