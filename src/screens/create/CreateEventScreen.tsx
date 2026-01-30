@@ -6,6 +6,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Calendar, Clock, MapPin, Image as ImageIcon } from 'lucide-react-native';
 import { useEventStore } from '../../store/eventStore';
 import * as Location from 'expo-location';
+import { useColorScheme } from 'nativewind';
 
 export default function CreateEventScreen() {
     const navigation = useNavigation();
@@ -60,10 +61,17 @@ export default function CreateEventScreen() {
         if (selectedDate) setDate(selectedDate);
     };
 
+    const { colorScheme } = useColorScheme();
+    const bgColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
+    const textColor = colorScheme === 'dark' ? '#FFFFFF' : '#111827';
+    const borderColor = colorScheme === 'dark' ? '#1F2937' : '#E5E7EB';
+    const inputBg = colorScheme === 'dark' ? '#1F2937' : '#F9FAFB';
+    const inputBorder = colorScheme === 'dark' ? '#374151' : '#E5E7EB';
+
     return (
-        <SafeAreaView className="flex-1 bg-white">
-            <View className="px-4 py-3 border-b border-gray-100 flex-row justify-between items-center">
-                <Text className="text-xl font-bold text-gray-900">Host an Event</Text>
+        <SafeAreaView className="flex-1 bg-white" style={{ backgroundColor: bgColor }}>
+            <View className="px-4 py-3 border-b border-gray-100 flex-row justify-between items-center" style={{ borderColor }}>
+                <Text className="text-xl font-bold text-gray-900" style={{ color: textColor }}>Host an Event</Text>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text className="text-gray-500">Cancel</Text>
                 </TouchableOpacity>
@@ -72,10 +80,12 @@ export default function CreateEventScreen() {
             <ScrollView className="flex-1 p-4">
                 {/* Title */}
                 <View className="mb-6">
-                    <Text className="text-gray-700 font-semibold mb-2">Event Title</Text>
+                    <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Event Title</Text>
                     <TextInput
                         className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-lg"
+                        style={{ backgroundColor: inputBg, borderColor: inputBorder, color: textColor }}
                         placeholder="e.g. Sunset Yoga"
+                        placeholderTextColor="#9CA3AF"
                         value={title}
                         onChangeText={setTitle}
                     />
@@ -83,10 +93,12 @@ export default function CreateEventScreen() {
 
                 {/* Description */}
                 <View className="mb-6">
-                    <Text className="text-gray-700 font-semibold mb-2">Description</Text>
+                    <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Description</Text>
                     <TextInput
                         className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-32 text-base"
+                        style={{ backgroundColor: inputBg, borderColor: inputBorder, color: textColor }}
                         placeholder="What's happening? details..."
+                        placeholderTextColor="#9CA3AF"
                         multiline
                         textAlignVertical="top"
                         value={description}
@@ -96,15 +108,19 @@ export default function CreateEventScreen() {
 
                 {/* Categories */}
                 <View className="mb-6">
-                    <Text className="text-gray-700 font-semibold mb-3">Category</Text>
+                    <Text className="text-gray-700 font-semibold mb-3" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Category</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
                         {categories.map((cat) => (
                             <TouchableOpacity
                                 key={cat}
                                 onPress={() => setCategory(cat)}
                                 className={`mr-3 px-4 py-2 rounded-full border ${category === cat ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'}`}
+                                style={{
+                                    backgroundColor: category === cat ? '#4F46E5' : (colorScheme === 'dark' ? '#111827' : '#FFFFFF'),
+                                    borderColor: category === cat ? '#4F46E5' : inputBorder
+                                }}
                             >
-                                <Text className={category === cat ? 'text-white font-semibold' : 'text-gray-600'}>
+                                <Text className={category === cat ? 'text-white font-semibold' : 'text-gray-600'} style={{ color: category === cat ? 'white' : (colorScheme === 'dark' ? '#D1D5DB' : '#4B5563') }}>
                                     {cat}
                                 </Text>
                             </TouchableOpacity>
@@ -115,23 +131,25 @@ export default function CreateEventScreen() {
                 {/* Date & Time */}
                 <View className="mb-6 flex-row gap-4">
                     <View className="flex-1">
-                        <Text className="text-gray-700 font-semibold mb-2">Date</Text>
+                        <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Date</Text>
                         <TouchableOpacity
                             onPress={() => setShowDatePicker(true)}
                             className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex-row items-center"
+                            style={{ backgroundColor: inputBg, borderColor: inputBorder }}
                         >
-                            <Calendar size={20} color="#4B5563" />
-                            <Text className="ml-2 text-gray-800">{date.toLocaleDateString()}</Text>
+                            <Calendar size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#4B5563'} />
+                            <Text className="ml-2 text-gray-800" style={{ color: textColor }}>{date.toLocaleDateString()}</Text>
                         </TouchableOpacity>
                     </View>
                     <View className="flex-1">
-                        <Text className="text-gray-700 font-semibold mb-2">Time</Text>
+                        <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Time</Text>
                         <TouchableOpacity
                             onPress={() => setShowTimePicker(true)}
                             className="bg-gray-50 p-3 rounded-xl border border-gray-200 flex-row items-center"
+                            style={{ backgroundColor: inputBg, borderColor: inputBorder }}
                         >
-                            <Clock size={20} color="#4B5563" />
-                            <Text className="ml-2 text-gray-800">{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+                            <Clock size={20} color={colorScheme === 'dark' ? '#9CA3AF' : '#4B5563'} />
+                            <Text className="ml-2 text-gray-800" style={{ color: textColor }}>{date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -156,17 +174,20 @@ export default function CreateEventScreen() {
 
                 {/* Location - Simplified for now */}
                 <View className="mb-6">
-                    <Text className="text-gray-700 font-semibold mb-2">Location</Text>
-                    <TouchableOpacity className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex-row items-center justify-center border-dashed border-2">
+                    <Text className="text-gray-700 font-semibold mb-2" style={{ color: colorScheme === 'dark' ? '#9CA3AF' : '#374151' }}>Location</Text>
+                    <TouchableOpacity
+                        className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex-row items-center justify-center border-dashed border-2"
+                        style={{ backgroundColor: colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.1)' : '#EEF2FF', borderColor: colorScheme === 'dark' ? 'rgba(79, 70, 229, 0.3)' : '#E0E7FF' }}
+                    >
                         <MapPin size={24} color="#4F46E5" />
                         <Text className="ml-2 text-indigo-600 font-semibold">Use Current Location</Text>
                     </TouchableOpacity>
                 </View>
 
                 {/* Privacy Toggle */}
-                <View className="mb-8 flex-row justify-between items-center bg-gray-50 p-4 rounded-xl">
+                <View className="mb-8 flex-row justify-between items-center bg-gray-50 p-4 rounded-xl" style={{ backgroundColor: inputBg }}>
                     <View>
-                        <Text className="font-semibold text-gray-800">Public Event</Text>
+                        <Text className="font-semibold text-gray-800" style={{ color: textColor }}>Public Event</Text>
                         <Text className="text-gray-500 text-xs">Visible to everyone nearby</Text>
                     </View>
                     <Switch

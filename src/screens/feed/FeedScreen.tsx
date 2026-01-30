@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, RefreshControl, Platform, Statu
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEventStore } from '../../store/eventStore';
 import EventCard from '../../components/EventCard';
+import FeedItem from '../../components/FeedItem';
 import * as Location from 'expo-location';
 import { MapPin, Filter } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -14,7 +15,8 @@ export default function FeedScreen() {
     const [locationError, setLocationError] = useState<string | null>(null);
     const { colorScheme } = useColorScheme();
 
-    const navigation = useNavigation();
+    // @ts-ignore - Temporarily ignore type check until param list is updated
+    const navigation = useNavigation<any>();
 
     useEffect(() => {
         loadData();
@@ -38,15 +40,25 @@ export default function FeedScreen() {
     };
 
     const iconColor = colorScheme === 'dark' ? '#9CA3AF' : '#374151';
+    const textColor = colorScheme === 'dark' ? '#FFFFFF' : '#111827';
+    const borderColor = colorScheme === 'dark' ? '#1F2937' : '#F3F4F6';
+    const bgColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
 
     return (
-        <SafeAreaView className="flex-1 bg-gray-50 dark:bg-black" edges={['top']}>
-            <View className="flex-row justify-between items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <SafeAreaView
+            className="flex-1 bg-gray-50 dark:bg-black"
+            edges={['top']}
+            style={{ backgroundColor: colorScheme === 'dark' ? '#000000' : '#F9FAFB' }}
+        >
+            <View
+                className="flex-row justify-between items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800"
+                style={{ backgroundColor: bgColor, borderColor: borderColor }}
+            >
                 <View className="flex-row items-center">
-                    <MapPin color="#4F46E5" size={20} />
-                    <Text className="text-lg font-bold text-gray-900 dark:text-white ml-2">San Francisco, CA</Text>
+                    <MapPin color={textColor} size={20} />
+                    <Text className="text-lg font-bold ml-2" style={{ color: textColor }}>Mumbai, IN</Text>
                 </View>
-                <TouchableOpacity className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full">
+                <TouchableOpacity className="p-2 bg-gray-100 dark:bg-gray-800 rounded-full" style={{ backgroundColor: colorScheme === 'dark' ? '#1F2937' : '#F3F4F6' }}>
                     <Filter size={20} color={iconColor} />
                 </TouchableOpacity>
             </View>
@@ -55,19 +67,25 @@ export default function FeedScreen() {
                 data={events}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <EventCard
+                    <FeedItem
                         event={item}
                         onPress={() => console.log('Event pressed', item.id)}
+                        onMapPress={() => {
+                            // Navigate to Map Tab with params
+                            navigation.navigate('Map', {
+                                focusEvent: item
+                            });
+                        }}
                     />
                 )}
-                contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+                contentContainerStyle={{ paddingBottom: 100 }}
                 refreshControl={
-                    <RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} tintColor="#4F46E5" />
+                    <RefreshControl refreshing={refreshing || loading} onRefresh={onRefresh} tintColor={colorScheme === 'dark' ? '#FFF' : '#000'} />
                 }
                 ListEmptyComponent={
                     !loading ? (
                         <View className="items-center justify-center py-20">
-                            <Text className="text-gray-500 dark:text-gray-400">No happenings found nearby.</Text>
+                            <Text style={{ color: textColor }}>No happenings found.</Text>
                         </View>
                     ) : null
                 }

@@ -12,6 +12,9 @@ interface EventCardProps {
 export default function EventCard({ event, onPress }: EventCardProps) {
     const { colorScheme } = useColorScheme();
     const iconColor = colorScheme === 'dark' ? '#9CA3AF' : '#6B7280';
+    const cardBg = colorScheme === 'dark' ? '#111827' : '#FFFFFF';
+    const textColor = colorScheme === 'dark' ? '#FFFFFF' : '#111827';
+    const borderColor = colorScheme === 'dark' ? '#1F2937' : '#F3F4F6';
 
     const formattedDate = new Date(event.start_time).toLocaleDateString('en-US', {
         weekday: 'short',
@@ -29,6 +32,7 @@ export default function EventCard({ event, onPress }: EventCardProps) {
             activeOpacity={0.9}
             onPress={onPress}
             className="bg-white dark:bg-gray-900 rounded-2xl mb-4 shadow-sm overflow-hidden border border-gray-100 dark:border-gray-800"
+            style={{ backgroundColor: cardBg, borderColor: borderColor }}
         >
             <View className="h-48 w-full bg-gray-200 dark:bg-gray-800">
                 {event.image_url ? (
@@ -37,18 +41,18 @@ export default function EventCard({ event, onPress }: EventCardProps) {
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <View className="w-full h-full items-center justify-center bg-gray-200 dark:bg-gray-800">
+                    <View className="w-full h-full items-center justify-center bg-gray-200 dark:bg-gray-800" style={{ backgroundColor: colorScheme === 'dark' ? '#1F2937' : '#E5E7EB' }}>
                         <Text className="text-gray-400">No Image</Text>
                     </View>
                 )}
-                <View className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-full">
+                <View className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-full" style={{ backgroundColor: colorScheme === 'dark' ? 'rgba(17, 24, 39, 0.9)' : 'rgba(255, 255, 255, 0.9)' }}>
                     <Text className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{event.category}</Text>
                 </View>
             </View>
 
             <View className="p-4">
                 <View className="flex-row justify-between items-start mb-2">
-                    <Text className="text-xl font-bold text-gray-900 dark:text-white flex-1 mr-2">{event.title}</Text>
+                    <Text className="text-xl font-bold text-gray-900 dark:text-white flex-1 mr-2" style={{ color: textColor }}>{event.title}</Text>
                     <View className="bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
                         <Text className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 relative top-[1px]">{event.distance?.toFixed(1)} km</Text>
                     </View>
