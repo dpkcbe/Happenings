@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { MapPin, Users, Calendar } from 'lucide-react-native';
 import { Event } from '../store/eventStore';
+import { useColorScheme } from 'nativewind';
 
 interface EventCardProps {
     event: Event;
@@ -9,6 +10,9 @@ interface EventCardProps {
 }
 
 export default function EventCard({ event, onPress }: EventCardProps) {
+    const { colorScheme } = useColorScheme();
+    const iconColor = colorScheme === 'dark' ? '#9CA3AF' : '#6B7280';
+
     const formattedDate = new Date(event.start_time).toLocaleDateString('en-US', {
         weekday: 'short',
         month: 'short',
@@ -24,45 +28,45 @@ export default function EventCard({ event, onPress }: EventCardProps) {
         <TouchableOpacity
             activeOpacity={0.9}
             onPress={onPress}
-            className="bg-white rounded-2xl mb-4 shadow-sm overflow-hidden border border-gray-100"
+            className="bg-white dark:bg-gray-900 rounded-2xl mb-4 shadow-sm overflow-hidden border border-gray-100 dark:border-gray-800"
         >
-            <View className="h-48 w-full bg-gray-200">
+            <View className="h-48 w-full bg-gray-200 dark:bg-gray-800">
                 {event.image_url ? (
                     <Image
                         source={{ uri: event.image_url }}
                         className="w-full h-full object-cover"
                     />
                 ) : (
-                    <View className="w-full h-full items-center justify-center bg-gray-200">
+                    <View className="w-full h-full items-center justify-center bg-gray-200 dark:bg-gray-800">
                         <Text className="text-gray-400">No Image</Text>
                     </View>
                 )}
-                <View className="absolute top-3 right-3 bg-white/90 px-3 py-1 rounded-full">
-                    <Text className="text-xs font-bold text-indigo-600">{event.category}</Text>
+                <View className="absolute top-3 right-3 bg-white/90 dark:bg-gray-900/90 px-3 py-1 rounded-full">
+                    <Text className="text-xs font-bold text-indigo-600 dark:text-indigo-400">{event.category}</Text>
                 </View>
             </View>
 
             <View className="p-4">
                 <View className="flex-row justify-between items-start mb-2">
-                    <Text className="text-xl font-bold text-gray-900 flex-1 mr-2">{event.title}</Text>
-                    <View className="bg-indigo-50 px-2 py-1 rounded">
-                        <Text className="text-xs font-semibold text-indigo-600 relative top-[1px]">{event.distance?.toFixed(1)} km</Text>
+                    <Text className="text-xl font-bold text-gray-900 dark:text-white flex-1 mr-2">{event.title}</Text>
+                    <View className="bg-indigo-50 dark:bg-indigo-900/30 px-2 py-1 rounded">
+                        <Text className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 relative top-[1px]">{event.distance?.toFixed(1)} km</Text>
                     </View>
                 </View>
 
-                <Text className="text-gray-500 text-sm mb-3">Hosted by {event.host_name}</Text>
+                <Text className="text-gray-500 dark:text-gray-400 text-sm mb-3">Hosted by {event.host_name}</Text>
 
                 <View className="flex-row items-center justify-between mt-2">
                     <View className="flex-row items-center">
-                        <Calendar size={14} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs ml-1 mr-3">
+                        <Calendar size={14} color={iconColor} />
+                        <Text className="text-gray-600 dark:text-gray-400 text-xs ml-1 mr-3">
                             {formattedDate} • {formattedTime}
                         </Text>
                     </View>
 
                     <View className="flex-row items-center">
-                        <Users size={14} color="#6B7280" />
-                        <Text className="text-gray-600 text-xs ml-1">
+                        <Users size={14} color={iconColor} />
+                        <Text className="text-gray-600 dark:text-gray-400 text-xs ml-1">
                             {event.attendees_count}/{event.max_participants || '∞'}
                         </Text>
                     </View>

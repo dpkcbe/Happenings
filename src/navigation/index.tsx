@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuthStore } from '../store/authStore';
 import { ActivityIndicator, View } from 'react-native';
 import { Home, Map, PlusSquare, MessageSquare, User } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 
 // Screens
 import LoginScreen from '../screens/auth/LoginScreen';
@@ -31,16 +32,19 @@ function AuthNavigator() {
 }
 
 function MainNavigator() {
+    const { colorScheme } = useColorScheme();
+    const isDark = colorScheme === 'dark';
+
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: '#4F46E5', // Indigo-600
+                tabBarActiveTintColor: isDark ? '#818CF8' : '#4F46E5',
                 tabBarInactiveTintColor: '#9CA3AF',
                 tabBarStyle: {
                     borderTopWidth: 1,
-                    borderTopColor: '#F3F4F6',
-                    backgroundColor: 'white',
+                    borderTopColor: isDark ? '#1F2937' : '#F3F4F6',
+                    backgroundColor: isDark ? '#111827' : 'white',
                     paddingBottom: 5,
                     paddingTop: 5,
                     height: 60,
@@ -112,8 +116,10 @@ export default function RootNavigator() {
         );
     }
 
+    const { colorScheme } = useColorScheme();
+
     return (
-        <NavigationContainer>
+        <NavigationContainer theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
                 {session ? (
                     <>
