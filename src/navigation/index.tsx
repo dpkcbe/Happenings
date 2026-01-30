@@ -103,6 +103,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 export default function RootNavigator() {
     const { session, loading, initialize } = useAuthStore();
+    const { colorScheme } = useColorScheme();
 
     useEffect(() => {
         initialize();
@@ -116,7 +117,7 @@ export default function RootNavigator() {
         );
     }
 
-    const { colorScheme } = useColorScheme();
+
 
     return (
         <NavigationContainer theme={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
