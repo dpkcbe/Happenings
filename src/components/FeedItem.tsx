@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
-import { Star, MessageSquareText, Share2, Bookmark, MoreHorizontal, Map } from 'lucide-react-native';
+import { Star, MessageSquareText, Share2, Bookmark, MoreHorizontal, Map as MapIcon } from 'lucide-react-native';
 import { Event } from '../store/eventStore';
 import { useColorScheme } from 'nativewind';
 
@@ -102,7 +102,7 @@ export default function FeedItem({ event, onPress, onMapPress }: FeedItemProps) 
                         className="flex-row items-center bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-full"
                         style={{ backgroundColor: colorScheme === 'dark' ? '#27272a' : '#f3f4f6' }}
                     >
-                        <Map size={18} color={iconColor} />
+                        <MapIcon size={18} color={iconColor} />
                         <Text className="text-xs font-bold ml-2" style={{ color: textColor }}>View Map</Text>
                     </TouchableOpacity>
                 </View>

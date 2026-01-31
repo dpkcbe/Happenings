@@ -102,7 +102,15 @@ export default function CreateEventScreen() {
         navigation.navigate('Feed' as never);
     };
 
-    // ... date handlers same ...
+    const onChangeDate = (event: any, selectedDate?: Date) => {
+        setShowDatePicker(Platform.OS === 'ios');
+        if (selectedDate) setDate(selectedDate);
+    };
+
+    const onChangeTime = (event: any, selectedDate?: Date) => {
+        setShowTimePicker(Platform.OS === 'ios');
+        if (selectedDate) setDate(selectedDate);
+    };
 
     const { colorScheme } = useColorScheme();
     const bgColor = colorScheme === 'dark' ? '#000000' : '#FFFFFF';
@@ -307,23 +315,22 @@ export default function CreateEventScreen() {
                 onRequestClose={() => setShowMapPicker(false)}
             >
                 <View className="flex-1 bg-white">
-                    <MapView
-                        ref={mapRef}
-                        style={{ width: width, height: height, flex: 1 }}
-                        initialRegion={mapRegion}
-                        onRegionChangeComplete={setMapRegion}
-                        showsUserLocation
-                        showsMyLocationButton
-                    >
-                        <Marker
-                            coordinate={mapRegion}
-                            title="Selected Location"
-                            description="Move map to pin location"
-                        />
-                        {/* We can make a fixed center pin overlay instead of a marker that moves with region, 
-                             or sticky marker. For simplicity, let's assume the center of the map is the selection. 
-                             Actually, let's use a center view overlay. */}
-                    </MapView>
+                    {showMapPicker && (
+                        <MapView
+                            ref={mapRef}
+                            style={{ width: width, height: height, flex: 1 }}
+                            initialRegion={mapRegion}
+                            onRegionChangeComplete={setMapRegion}
+                            showsUserLocation
+                            showsMyLocationButton
+                        >
+                            <Marker
+                                coordinate={mapRegion}
+                                title="Selected Location"
+                                description="Move map to pin location"
+                            />
+                        </MapView>
+                    )}
 
                     {/* Center Pin Overlay */}
                     <View className="absolute top-1/2 left-1/2 -mt-9 -ml-4 pointer-events-none" style={{ marginTop: -36, marginLeft: -16 }}>
