@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
+import { Attendee } from './socialStore';
 
 export interface Event {
     id: string;
@@ -21,13 +22,20 @@ export interface Event {
     max_participants: number | null;
     attendees_count: number;
     distance?: number; // Calculated field
+    attendees?: Attendee[]; // Detailed attendee list
+    is_trending?: boolean;
+    is_saved?: boolean;
 }
 
 interface EventState {
     events: Event[];
+    savedEventIds: string[];
     loading: boolean;
     fetchEvents: (lat: number, long: number) => Promise<void>;
     addEvent: (event: Partial<Event>) => Promise<void>;
+    toggleSaveEvent: (eventId: string) => void;
+    isSaved: (eventId: string) => boolean;
+    attendEvent: (eventId: string, userId: string, userName: string, avatarUrl: string) => void;
 }
 
 // Mock data for initial UI development
@@ -160,19 +168,29 @@ const MOCK_EVENTS: Event[] = [
     }
 ];
 
-export const useEventStore = create<EventState>((set) => ({
+export const useEventStore = create<EventState>((set, get) => ({
     events: [],
+    savedEventIds: [],
     loading: false,
+
     fetchEvents: async (lat: number, long: number) => {
         set({ loading: true });
         // TODO: Implement actual Supabase fetch
         // const { data, error } = await supabase.from('events').select('*');
 
-        // Simulate network delay
+        // Mark saved events and add trending flags
         setTimeout(() => {
-            set({ loading: false, events: MOCK_EVENTS });
-        }, 1000);
+            const { savedEventIds } = get();
+            const eventsWithFlags = MOCK_EVENTS.map(event => ({
+                ...event,
+                is_saved: savedEventIds.includes(event.id),
+                is_trending: event.attendees_count > 40 ||
+                    (!!event.max_participants && event.attendees_count / event.max_participants > 0.7)
+            }));
+            set({ loading: false, events: eventsWithFlags });
+        }, 300);
     },
+
     addEvent: async (newEvent: Partial<Event>) => {
         // Mock implementation
         const event: Event = {
@@ -195,9 +213,52 @@ export const useEventStore = create<EventState>((set) => ({
             max_participants: 100,
             attendees_count: 1,
             distance: 0,
+            is_trending: false,
+            is_saved: false,
             ...newEvent,
         } as Event;
 
         set((state) => ({ events: [event, ...state.events] }));
     },
+
+    toggleSaveEvent: (eventId: string) => {
+        set((state) => {
+            const isSaved = state.savedEventIds.includes(eventId);
+            const newSavedIds = isSaved
+                ? state.savedEventIds.filter(id => id !== eventId)
+                : [...state.savedEventIds, eventId];
+
+            // Update event flags
+            const updatedEvents = state.events.map(event =>
+                event.id === eventId ? { ...event, is_saved: !isSaved } : event
+            );
+
+            return { savedEventIds: newSavedIds, events: updatedEvents };
+        });
+    },
+
+    isSaved: (eventId: string) => {
+        return get().savedEventIds.includes(eventId);
+    },
+
+    attendEvent: (eventId: string, userId: string, userName: string, avatarUrl: string) => {
+        set((state) => ({
+            events: state.events.map(event => {
+                if (event.id === eventId) {
+                    const newAttendee: Attendee = {
+                        user_id: userId,
+                        name: userName,
+                        avatar_url: avatarUrl,
+                        is_friend: false
+                    };
+                    return {
+                        ...event,
+                        attendees_count: event.attendees_count + 1,
+                        attendees: [...(event.attendees || []), newAttendee]
+                    };
+                }
+                return event;
+            })
+        }));
+    }
 }));
