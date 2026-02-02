@@ -4,13 +4,14 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuthStore } from '../store/authStore';
 import { ActivityIndicator, View } from 'react-native';
-import { Home, Map, PlusSquare, MessageSquare, User } from 'lucide-react-native';
+import { Home, Map, PlusSquare, MessageSquare, User, Film } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 
 // Screens
 import LoginScreen from '../screens/auth/LoginScreen';
 import SignupScreen from '../screens/auth/SignupScreen';
 import FeedScreen from '../screens/feed/FeedScreen';
+import ReelsScreen from '../screens/reels/ReelsScreen';
 import MapScreen from '../screens/map/MapScreen';
 import CreateEventScreen from '../screens/create/CreateEventScreen';
 import MessagesScreen from '../screens/messages/MessagesScreen';
@@ -32,26 +33,25 @@ function AuthNavigator() {
 }
 
 function MainNavigator() {
-    const { colorScheme } = useColorScheme();
-    const isDark = colorScheme === 'dark';
-
     return (
         <Tab.Navigator
             screenOptions={{
                 headerShown: false,
-                tabBarActiveTintColor: isDark ? '#818CF8' : '#4F46E5',
-                tabBarInactiveTintColor: '#9CA3AF',
+                tabBarActiveTintColor: '#C084FC',
+                tabBarInactiveTintColor: '#94A3B8',
                 tabBarStyle: {
                     borderTopWidth: 1,
-                    borderTopColor: isDark ? '#1F2937' : '#F3F4F6',
-                    backgroundColor: isDark ? '#111827' : 'white',
-                    paddingBottom: 5,
-                    paddingTop: 5,
-                    height: 60,
+                    borderTopColor: '#1E1E3F',
+                    backgroundColor: '#050511',
+                    paddingBottom: 8,
+                    paddingTop: 8,
+                    height: 65,
+                    elevation: 0,
+                    shadowOpacity: 0,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 12,
-                    fontWeight: '500',
+                    fontSize: 10,
+                    fontFamily: 'Outfit_500Medium',
                 }
             }}
         >
@@ -61,6 +61,14 @@ function MainNavigator() {
                 options={{
                     tabBarIcon: ({ color, size }) => <Home color={color} size={size} />,
                     title: 'Happenings'
+                }}
+            />
+            <Tab.Screen
+                name="Reels"
+                component={ReelsScreen}
+                options={{
+                    tabBarIcon: ({ color, size }) => <Film color={color} size={size} />,
+                    title: 'Reels'
                 }}
             />
             <Tab.Screen

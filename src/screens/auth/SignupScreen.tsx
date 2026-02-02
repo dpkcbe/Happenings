@@ -1,9 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Alert, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
 import { supabase } from '../../lib/supabase';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../../navigation/types';
+import { ScreenWrapper } from '../../components/common/ScreenWrapper';
+import { Input } from '../../components/common/Input';
+import { Button } from '../../components/common/Button';
+import { Mail, Lock, User as UserIcon } from 'lucide-react-native';
 
 type AuthScreenNavigationProp = NativeStackNavigationProp<AuthStackParamList, 'Signup'>;
 
@@ -15,6 +19,10 @@ export default function SignupScreen() {
     const [loading, setLoading] = useState(false);
 
     async function signUpWithEmail() {
+        if (!email || !password || !fullName) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
         setLoading(true);
         const { error } = await supabase.auth.signUp({
             email,
@@ -27,64 +35,84 @@ export default function SignupScreen() {
         });
 
         if (error) {
-            Alert.alert(error.message);
+            Alert.alert('Error', error.message);
         } else {
-            Alert.alert('Check your inbox for email verification!');
+            Alert.alert('Success', 'Check your inbox for email verification!');
         }
         setLoading(false);
     }
 
     return (
-        <View className="flex-1 justify-center items-center bg-white p-4">
-            <Text className="text-3xl font-bold mb-2 text-indigo-600">Join Happenings</Text>
-            <Text className="text-gray-500 mb-8">Discover events near you</Text>
-
-            <View className="w-full max-w-sm">
-                <TextInput
-                    className="bg-gray-100 p-4 rounded-lg mb-4 text-gray-800"
-                    placeholder="Full Name"
-                    placeholderTextColor="#9CA3AF"
-                    value={fullName}
-                    onChangeText={setFullName}
-                />
-                <TextInput
-                    className="bg-gray-100 p-4 rounded-lg mb-4 text-gray-800"
-                    placeholder="Email"
-                    placeholderTextColor="#9CA3AF"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                />
-                <TextInput
-                    className="bg-gray-100 p-4 rounded-lg mb-6 text-gray-800"
-                    placeholder="Password"
-                    placeholderTextColor="#9CA3AF"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry
-                />
-
-                <TouchableOpacity
-                    className="bg-indigo-600 p-4 rounded-lg items-center shadow-lg"
-                    onPress={signUpWithEmail}
-                    disabled={loading}
+        <ScreenWrapper>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                className="flex-1"
+            >
+                <ScrollView
+                    contentContainerStyle={{ flexGrow: 1 }}
+                    className="px-6"
                 >
-                    {loading ? (
-                        <ActivityIndicator color="#fff" />
-                    ) : (
-                        <Text className="text-white font-bold text-lg">Sign Up</Text>
-                    )}
-                </TouchableOpacity>
+                    <View className="flex-1 justify-center py-12">
+                        <View className="mb-12">
+                            <Text className="text-4xl font-bold text-white mb-2" style={{ fontFamily: 'Outfit_700Bold' }}>
+                                Create Account
+                            </Text>
+                            <Text className="text-text-secondary text-lg" style={{ fontFamily: 'Outfit_400Regular' }}>
+                                Start discovering amazing events.
+                            </Text>
+                        </View>
 
-                <TouchableOpacity
-                    className="mt-6 items-center"
-                    onPress={() => navigation.goBack()}
-                >
-                    <Text className="text-gray-600">
-                        Already have an account? <Text className="text-indigo-600 font-semibold">Sign In</Text>
-                    </Text>
-                </TouchableOpacity>
-            </View>
-        </View>
+                        <View className="space-y-6">
+                            <Input
+                                label="Full Name"
+                                placeholder="John Doe"
+                                value={fullName}
+                                onChangeText={setFullName}
+                                icon={<UserIcon size={20} color="#94A3B8" />}
+                            />
+
+                            <Input
+                                label="Email Address"
+                                placeholder="name@example.com"
+                                value={email}
+                                onChangeText={setEmail}
+                                autoCapitalize="none"
+                                keyboardType="email-address"
+                                icon={<Mail size={20} color="#94A3B8" />}
+                            />
+
+                            <Input
+                                label="Password"
+                                placeholder="Create a password"
+                                value={password}
+                                onChangeText={setPassword}
+                                secureTextEntry
+                                icon={<Lock size={20} color="#94A3B8" />}
+                            />
+
+                            <View className="pt-4">
+                                <Button
+                                    title="Sign Up"
+                                    onPress={signUpWithEmail}
+                                    loading={loading}
+                                    size="lg"
+                                />
+                            </View>
+
+                            <View className="flex-row justify-center mt-8">
+                                <Text className="text-text-secondary" style={{ fontFamily: 'Outfit_400Regular' }}>
+                                    Already have an account?{' '}
+                                </Text>
+                                <TouchableOpacity onPress={() => navigation.goBack()}>
+                                    <Text className="text-primary font-bold" style={{ fontFamily: 'Outfit_700Bold' }}>
+                                        Sign In
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </ScrollView>
+            </KeyboardAvoidingView>
+        </ScreenWrapper>
     );
 }
