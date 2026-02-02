@@ -31,6 +31,18 @@ function deg2rad(deg: number) {
 // Mock User Interests (ideally from AuthStore)
 const USER_INTERESTS = ['Tech', 'Music', 'Food', 'Dance', 'Health'];
 
+const CATEGORY_COLORS: { [key: string]: string } = {
+    'Social': '#0a0a0a',
+    'Music': '#C084FC',
+    'Sports': '#3B82F6',
+    'Wellness': '#10B981',
+    'Education': '#F59E0B',
+    'Food': '#EF4444',
+    'Health': '#10B981',
+    'Business': '#3B82F6',
+    'default': '#64748B'
+};
+
 type MapScreenNavigationProp = BottomTabNavigationProp<MainTabParamList, 'Map'>;
 
 export default function MapScreen() {
@@ -41,6 +53,7 @@ export default function MapScreen() {
     const [locationLoading, setLocationLoading] = useState(true);
     const [filterMode, setFilterMode] = useState<'nearby' | 'global' | null>('nearby');
     const [showFilterModal, setShowFilterModal] = useState(false);
+    const [currentDelta, setCurrentDelta] = useState(0.15); // Track zoom level
     const navigation = useNavigation<MapScreenNavigationProp>();
 
     useEffect(() => {
@@ -48,16 +61,29 @@ export default function MapScreen() {
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
                 // Fallback to default location if permission denied
-                setUserLocation({
-                    latitude: 19.0760,
-                    longitude: 72.8777
-                });
-                fetchEvents(19.0760, 72.8777);
+                const fallback = { latitude: 19.0760, longitude: 72.8777 };
+                setUserLocation(fallback);
+                fetchEvents(fallback.latitude, fallback.longitude);
                 setLocationLoading(false);
                 return;
             }
 
-            let location = await Location.getCurrentPositionAsync({});
+            // Try to get last known position first (instant)
+            let lastLocation = await Location.getLastKnownPositionAsync({});
+            if (lastLocation) {
+                const lastCoords = {
+                    latitude: lastLocation.coords.latitude,
+                    longitude: lastLocation.coords.longitude,
+                };
+                setUserLocation(lastCoords);
+                setLocationLoading(false);
+                fetchEvents(lastCoords.latitude, lastCoords.longitude);
+            }
+
+            // Then get a fresh one with Balanced accuracy for speed
+            let location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced
+            });
             const userCoords = {
                 latitude: location.coords.latitude,
                 longitude: location.coords.longitude,
@@ -71,6 +97,7 @@ export default function MapScreen() {
     }, []);
 
     const route = useRoute<any>(); // Using any for quick access to params
+    const focusedEventId = route.params?.focusEvent?.id;
 
     // Listen for tab focus to handle params reliably
     useEffect(() => {
@@ -78,20 +105,13 @@ export default function MapScreen() {
             const params = route.params;
             if (params?.focusEvent) {
                 const event = params.focusEvent;
-                // If focusing on a specific event, we should probably allow 'global' mode or just ignore filter temporarily?
-                // For now, let's auto-switch to global if the event is far, or just ensure it's visible. 
-                // Simplest is to strict filter but if user comes from feed, they want to see THAT event.
-                // Let's set filterMode to 'global' to ensure it's not hidden by 'nearby' if it's far.
-
-                // Only change if not set or if we need to? Let's just override to global to be safe.
-                // setFilterMode('global'); 
 
                 if (event.location && mapRef.current) {
                     mapRef.current.animateToRegion({
                         latitude: event.location.latitude,
                         longitude: event.location.longitude,
-                        latitudeDelta: 0.005, // Zoom in closer (approx 500m)
-                        longitudeDelta: 0.005,
+                        latitudeDelta: 0.01, // Zoom in closer to show the specific event
+                        longitudeDelta: 0.01,
                     }, 1000);
                 }
             } else {
@@ -110,6 +130,9 @@ export default function MapScreen() {
 
         return events.filter(event => {
             if (!event.location) return false;
+
+            // Always show focused event
+            if (focusedEventId && event.id === focusedEventId) return true;
 
             if (filterMode === 'nearby') {
                 if (!userLocation) return true; // Fallback or wait?
@@ -185,28 +208,86 @@ export default function MapScreen() {
                     showsUserLocation
                     showsMyLocationButton={false}
                     onLongPress={() => setShowFilterModal(true)}
+                    onRegionChangeComplete={(region) => setCurrentDelta(region.latitudeDelta)}
                 >
-                    {filteredEvents.filter(e => e.location?.latitude && e.location?.longitude).map((event) => (
-                        <Marker
-                            key={event.id}
-                            coordinate={{ latitude: event.location!.latitude, longitude: event.location!.longitude }}
-                            title={event.title}
-                            description={event.description}
-                        >
-                            <View className="bg-black dark:bg-white p-2 rounded-full border-2 border-white dark:border-black shadow-lg">
-                                <Text className="text-white dark:text-black text-xs font-bold w-full text-center">
-                                    {event.category.substring(0, 2).toUpperCase()}
-                                </Text>
-                            </View>
-                            <Callout tooltip>
-                                <View className="bg-white p-3 rounded-lg shadow-xl w-60 border border-gray-100">
-                                    <Text className="font-bold text-gray-900 mb-1">{event.title}</Text>
-                                    <Text className="text-xs text-gray-500 mb-2" numberOfLines={2}>{event.description}</Text>
-                                    <Text className="text-xs font-semibold text-black">Tap for details</Text>
+                    {filteredEvents.filter(e => e.location?.latitude && e.location?.longitude).map((event) => {
+                        const isFocused = event.id === focusedEventId;
+                        const categoryColor = CATEGORY_COLORS[event.category] || CATEGORY_COLORS['default'];
+                        const isZoomedIn = currentDelta < 0.02;
+
+                        return (
+                            <Marker
+                                key={`${event.id}-${event.title}`}
+                                coordinate={{ latitude: event.location!.latitude, longitude: event.location!.longitude }}
+                                anchor={{ x: 0.5, y: 1 }}
+                                tracksViewChanges={true}
+                                zIndex={isFocused ? 100 : 1}
+                            >
+                                <View
+                                    style={{
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <View
+                                        style={{
+                                            backgroundColor: categoryColor,
+                                            width: isFocused ? 28 : 20,
+                                            height: isFocused ? 28 : 20,
+                                            borderRadius: 14,
+                                            borderWidth: 2,
+                                            borderColor: '#FFFFFF',
+                                            elevation: 8,
+                                            shadowColor: '#000',
+                                            shadowOffset: { width: 0, height: 4 },
+                                            shadowOpacity: 0.3,
+                                            shadowRadius: 4.65,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        <View
+                                            style={{
+                                                width: 6,
+                                                height: 6,
+                                                borderRadius: 3,
+                                                backgroundColor: '#FFFFFF',
+                                                opacity: 0.8
+                                            }}
+                                        />
+                                    </View>
+
+                                    {/* Marker Stem */}
+                                    <View
+                                        style={{
+                                            width: 3,
+                                            height: 6,
+                                            backgroundColor: '#FFFFFF',
+                                            marginTop: -1,
+                                            borderBottomLeftRadius: 2,
+                                            borderBottomRightRadius: 2,
+                                        }}
+                                    />
                                 </View>
-                            </Callout>
-                        </Marker>
-                    ))}
+                                <Callout tooltip onPress={() => navigation.navigate('Feed')}>
+                                    <View className="bg-surface p-4 rounded-3xl shadow-2xl w-64 border border-surface-highlight">
+                                        <View className="flex-row items-center mb-2">
+                                            <View
+                                                className="w-2 h-2 rounded-full mr-2"
+                                                style={{ backgroundColor: categoryColor }}
+                                            />
+                                            <Text className="text-white text-xs font-bold" style={{ fontFamily: 'Outfit_700Bold' }}>{event.category.toUpperCase()}</Text>
+                                        </View>
+                                        <Text className="text-white font-bold text-lg mb-1" style={{ fontFamily: 'Outfit_700Bold' }}>{event.title}</Text>
+                                        <Text className="text-text-secondary text-sm mb-4" style={{ fontFamily: 'Outfit_400Regular' }} numberOfLines={3}>{event.description}</Text>
+                                        <View className="bg-primary/10 p-3 rounded-2xl items-center">
+                                            <Text className="text-primary font-bold text-xs" style={{ fontFamily: 'Outfit_700Bold' }}>TAP TO VIEW DETAILS</Text>
+                                        </View>
+                                    </View>
+                                </Callout>
+                            </Marker>
+                        );
+                    })}
                 </MapView>
             )}
 

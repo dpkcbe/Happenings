@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Switch, Alert, Platform, Image, Modal, Dimensions } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
@@ -27,6 +27,7 @@ export default function CreateEventScreen() {
     const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
     const [locationData, setLocationData] = useState<{ lat: number, long: number, address: string } | null>(null);
     const [showMapPicker, setShowMapPicker] = useState(false);
+    const [userCurrentLocation, setUserCurrentLocation] = useState<{ latitude: number, longitude: number } | null>(null);
     const [mapRegion, setMapRegion] = useState({
         latitude: 19.0760,
         longitude: 72.8777,
@@ -36,6 +37,39 @@ export default function CreateEventScreen() {
     const mapRef = useRef<MapView>(null);
 
     const categories = ['Social', 'Music', 'Sports', 'Wellness', 'Education', 'Food'];
+
+    // Get user's current location on mount for readiness
+    useEffect(() => {
+        (async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync();
+            if (status === 'granted') {
+                // Get last known for instant readiness
+                const lastLocation = await Location.getLastKnownPositionAsync({});
+                if (lastLocation) {
+                    const lastCoords = {
+                        latitude: lastLocation.coords.latitude,
+                        longitude: lastLocation.coords.longitude
+                    };
+                    setMapRegion(prev => ({ ...prev, ...lastCoords }));
+                }
+
+                // Get fresh for accuracy
+                let location = await Location.getCurrentPositionAsync({
+                    accuracy: Location.Accuracy.Balanced
+                });
+                const coords = {
+                    latitude: location.coords.latitude,
+                    longitude: location.coords.longitude
+                };
+                setUserCurrentLocation(coords);
+                setMapRegion(prev => ({
+                    ...prev,
+                    latitude: coords.latitude,
+                    longitude: coords.longitude,
+                }));
+            }
+        })();
+    }, []);
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -82,9 +116,23 @@ export default function CreateEventScreen() {
             return;
         }
 
-        let location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-        setLocationData({ lat: latitude, long: longitude, address: 'Current Location' });
+        // Try getting last known position first for instant result
+        const lastLocation = await Location.getLastKnownPositionAsync({});
+        if (lastLocation) {
+            setLocationData({
+                lat: lastLocation.coords.latitude,
+                long: lastLocation.coords.longitude,
+                address: 'Current Location'
+            });
+        }
+
+        // Fresh position in background
+        Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced
+        }).then(location => {
+            const { latitude, longitude } = location.coords;
+            setLocationData({ lat: latitude, long: longitude, address: 'Current Location' });
+        }).catch(err => console.log('Background location error:', err));
     };
 
     const handleCreate = async () => {
@@ -281,7 +329,35 @@ export default function CreateEventScreen() {
                             </TouchableOpacity>
 
                             <TouchableOpacity
-                                onPress={() => setShowMapPicker(true)}
+                                onPress={async () => {
+                                    setShowMapPicker(true); // Open immediately
+
+                                    let { status } = await Location.requestForegroundPermissionsAsync();
+                                    if (status === 'granted') {
+                                        // Try last known first
+                                        const lastLocation = await Location.getLastKnownPositionAsync({});
+                                        if (lastLocation) {
+                                            setMapRegion({
+                                                latitude: lastLocation.coords.latitude,
+                                                longitude: lastLocation.coords.longitude,
+                                                latitudeDelta: 0.05,
+                                                longitudeDelta: 0.05,
+                                            });
+                                        }
+
+                                        // Update with fresh if possible
+                                        Location.getCurrentPositionAsync({
+                                            accuracy: Location.Accuracy.Balanced
+                                        }).then(location => {
+                                            setMapRegion({
+                                                latitude: location.coords.latitude,
+                                                longitude: location.coords.longitude,
+                                                latitudeDelta: 0.05,
+                                                longitudeDelta: 0.05,
+                                            });
+                                        }).catch(err => console.log('BG Picker Error:', err));
+                                    }
+                                }}
                                 className="flex-1 bg-surface p-4 rounded-2xl border border-surface-highlight flex-row items-center justify-center"
                             >
                                 <MapPin size={18} color="#94A3B8" />

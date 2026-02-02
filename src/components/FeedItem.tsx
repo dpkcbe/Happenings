@@ -161,9 +161,9 @@ export default function FeedItem({ event, onPress, onMapPress }: FeedItemProps) 
 
                     <TouchableOpacity
                         onPress={onMapPress}
-                        className="bg-primary/10 border border-primary/30 px-4 py-2 rounded-full"
+                        className="bg-primary p-3 rounded-full shadow-lg"
                     >
-                        <Text className="text-primary text-xs font-bold" style={{ fontFamily: 'Outfit_700Bold' }}>Details</Text>
+                        <MapIcon size={20} color="#FFF" />
                     </TouchableOpacity>
                 </View>
             </View>

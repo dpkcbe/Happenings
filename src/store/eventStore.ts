@@ -188,7 +188,7 @@ export const useEventStore = create<EventState>((set, get) => ({
                     (!!event.max_participants && event.attendees_count / event.max_participants > 0.7)
             }));
             set({ loading: false, events: eventsWithFlags });
-        }, 1000);
+        }, 300);
     },
 
     addEvent: async (newEvent: Partial<Event>) => {
